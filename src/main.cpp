@@ -125,7 +125,7 @@ void setup() {
   canvas.setTextSize(34);
   canvas.setTextColor(15);
 
-  WiFi.begin("*******", "*******"); 
+  WiFi.begin("*ssid*", "*passwd*"); 
   while (WiFi.status() != WL_CONNECTED) { 
       delay(100); 
       Serial.print("."); 
