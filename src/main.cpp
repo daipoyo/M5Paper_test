@@ -1,6 +1,5 @@
 #include <Arduino.h>
 #include <iostream>
-#include <Wstring.h>
 #include <cstdlib>
 #include <stdio.h>
 #include <string.h>
@@ -26,8 +25,6 @@ char timeStrbuff[64];
 float tem;
 float hum;
 
-// const char * testDocument = "<channel><title>NHKニュース</title><channel><title>東日本や西日本の太平洋側でも降雪のおそれ 交通影響に警戒</title><title>東日本や西日本の太平洋側でも降雪のおそれ 交通影響に警戒</title><title>東日本や西日本の太平洋側でも降雪のおそれ 交通影響に警戒</title><title>東日本や西日本の太平洋側でも降雪のおそれ 交通影響に警戒</title><title>東日本や西日本の太平洋側でも降雪のおそれ 交通影響に警戒</title><title>東日本や西日本の太平洋側でも降雪のおそれ 交通影響に警戒</title><title>東日本や西日本の太平洋側でも降雪のおそれ 交通影響に警戒</title><title>東日本や西日本の太平洋側でも降雪のおそれ 交通影響に警戒</title><title>東日本や西日本の太平洋側でも降雪のおそれ 交通影響に警戒</title><title>東日本や西日本の太平洋側でも降雪のおそれ 交通影響に警戒</title><title>東日本や西日本の太平洋側でも降雪のおそれ 交通影響に警戒</title><title>東日本や西日本の太平洋側でも降雪のおそれ 交通影響に警戒</title><title>東日本や西日本の太平洋側でも降雪のおそれ 交通影響に警戒</title><title>東日本や西日本の太平洋側でも降雪のおそれ 交通影響に警戒</title><title>東日本や西日本の太平洋側でも降雪のおそれ 交通影響に警戒</title><title>東日本や西日本の太平洋側でも降雪のおそれ 交通影響に警戒</title><title>東日本や西日本の太平洋側でも降雪のおそれ 交通影響に警戒</title><title>東日本や西日本の太平洋側でも降雪のおそれ 交通影響に警戒</title><title>東日本や西日本の太平洋側でも降雪のおそれ 交通影響に警戒</title><title>東日本や西日本の太平洋側でも降雪のおそれ 交通影響に警戒</title><title>東日本や西日本の太平洋側でも降雪のおそれ 交通影響に警戒</title><title>東日本や西日本の太平洋側でも降雪のおそれ 交通影響に警戒</title><title>東日本や西日本の太平洋側でも降雪のおそれ 交通影響に警戒</title><title>東日本や西日本の太平洋側でも降雪のおそれ 交通影響に警戒</title><title>東日本や西日本の太平洋側でも降雪のおそれ 交通影響に警戒</title><title>東日本や西日本の太平洋側でも降雪のおそれ 交通影響に警戒</title><title>東日本や西日本の太平洋側でも降雪のおそれ 交通影響に警戒</title><title>BBCニュース</title><title>もうやめたい</title></channel>";
-
 //Parser Orig
 std::vector<int> find_all(const std::string str, const std::string subStr) {
     std::vector<int> result;
@@ -43,14 +40,6 @@ std::vector<int> find_all(const std::string str, const std::string subStr) {
     return result;
 }
 
-// void han2zen(std::string temp){
-//   std::vector<std::string> hanvec = [a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z, ,1,2,3,4,5,6,7,8,9,0];
-//   std::vector<std::string> zenvec = [ａ,ｂ,ｃ,ｄ,ｅ,ｆ,ｇ,ｈ,ｉ,ｊ,ｋ,ｌ,ｍ,ｎ,ｏ,ｐ,ｑ,ｒ,ｓ,ｔ,ｕ,ｖ,ｗ,ｘ,ｙ,ｚ,　,１,２,３,４,５,６,７,８,９,０];
-//   for(i = 0; i > 36; i = i + 1){
-//     temp = regex_replace(temp, regex(hanvec[i]), zenvec[i]);
-//   }
-// }
-
 //RTC1
 void flushTime(){
     M5.RTC.getTime(&RTCtime);
@@ -60,23 +49,63 @@ void flushTime(){
     sprintf(timeStrbuff,"%d/%02d/%02d %02d:%02d",
                         RTCDate.year,RTCDate.mon,RTCDate.day,
                         RTCtime.hour,RTCtime.min);
-
+    
     canvas.drawString(timeStrbuff, 10, 900);
-    canvas.pushCanvas(0,0,UPDATE_MODE_A2);
+    // canvas.pushCanvas(0,0,UPDATE_MODE_A2);
 }
 
-//RTC2
-void setupTime(){
+// Battery
+void flushBattery(){
 
-  RTCtime.hour = 00;
-  RTCtime.min = 07;
-  RTCtime.sec = 10;
-  M5.RTC.setTime(&RTCtime);
+  char buf[20];
+  
+  uint32_t vol = M5.getBatteryVoltage();
+  if(vol < 3300){
+      vol = 3300;
+  }else if(vol > 4350){
+      vol = 4350;
+  }
 
-  RTCDate.year = 2021;
-  RTCDate.mon = 01;
-  RTCDate.day = 13;
-  M5.RTC.setDate(&RTCDate);
+  float battery = (float)(vol - 3300) / (float)(4350 - 3300);
+  
+  if(battery <= 0.01){
+      battery = 0.01;
+  }
+  if(battery > 1){
+      battery = 1;
+  }
+
+  // uint8_t px = battery * 25;
+  sprintf(buf, "%d%%", (int)(battery * 100));
+  canvas.drawString(buf, 400, 900, 27);
+  // canvas.fillRect(498 + 3, 8 + 10, px, 13, 15);
+  // _bar->pushImage(498, 8, 32, 32, 2, ImageResource_status_bar_battery_charging_32x32);
+}
+
+//Set Time
+int8_t global_timezone = 9;
+
+bool SyncNTPTime(void){
+    const char *ntpServer = "time.cloudflare.com";
+    configTime(global_timezone * 3600, 0, ntpServer);
+
+    struct tm timeInfo;
+    if (getLocalTime(&timeInfo)){
+        rtc_time_t time_struct;
+        time_struct.hour = timeInfo.tm_hour;
+        time_struct.min = timeInfo.tm_min;
+        time_struct.sec = timeInfo.tm_sec;
+        M5.RTC.setTime(&time_struct);
+        rtc_date_t date_struct;
+        date_struct.week = timeInfo.tm_wday;
+        date_struct.mon = timeInfo.tm_mon + 1;
+        date_struct.day = timeInfo.tm_mday;
+        date_struct.year = timeInfo.tm_year + 1900;
+        M5.RTC.setDate(&date_struct);
+        return 1;
+    }
+    log_d("Time Sync failed");
+    return 0;
 }
 
 void setup() {
@@ -96,8 +125,6 @@ void setup() {
   canvas.setTextSize(34);
   canvas.setTextColor(15);
 
-  setupTime();
-
   WiFi.begin("*******", "*******"); 
   while (WiFi.status() != WL_CONNECTED) { 
       delay(100); 
@@ -107,6 +134,8 @@ void setup() {
   Serial.println();
   Serial.print("WiFi connected: ");
   Serial.println(WiFi.localIP());
+
+  SyncNTPTime();
 
 }
 
@@ -120,7 +149,7 @@ void loop() {
     HTTPClient http;
 
     // http.begin( "http://www.nhk.or.jp/rss/news/cat0.xml" ); //Specify the URL and certificate
-    http.begin( "http://feeds.bbci.co.uk/news/rss.xml" ); //Specify the URL and certificate
+    http.begin( "http://www.japantimes.co.jp/feed" ); //Specify the URL and certificate
     int httpCode = http.GET(); //Make the request
  
     if (httpCode == HTTP_CODE_OK) { //Check for the returning code
@@ -177,7 +206,8 @@ void loop() {
     Serial.println(title_row);
     Serial.println(desc_row);
 
-    canvas.drawString("NHK総合ニュース", 5, 10);
+    // canvas.drawString("NHK総合ニュース", 5, 10);
+    canvas.drawString("JapanTimes TopNews", 5, 10);
 
     unsigned int position = 0;
     title_row = title_row + 1;
@@ -206,11 +236,19 @@ void loop() {
     
     canvas.drawString("温度:" + String(temStr) + "℃", 10, 800);
     canvas.drawString("湿度:" + String(humStr) + "%", 10, 850);
-    canvas.pushCanvas(0,0,UPDATE_MODE_A2);
 
     flushTime();
+    flushBattery();
+    canvas.pushCanvas(0,0,UPDATE_MODE_A2);
 
-    sleep(10); //7min
+    M5.disableEPDPower();
+    delay(500);
+    M5.disableMainPower();
+
+    sleep(900); //interval:15min
+    M5.enableMainPower();
+    delay(500);
+    M5.enableEPDPower();
   }
 
   for (const auto &pos:findVec4) {
