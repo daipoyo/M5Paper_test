@@ -10,11 +10,77 @@
 #include <regex>
 #include "FS.h"
 #include "SPIFFS.h"
-#include "tinyxml2.h"
+
+const char* ca= \
+"-----BEGIN CERTIFICATE-----\n" \
+"MIIL3TCCCsWgAwIBAgIMb5wBeBwhgDIlSnMrMA0GCSqGSIb3DQEBCwUAMGIxCzAJ\n" \
+"BgNVBAYTAkJFMRkwFwYDVQQKExBHbG9iYWxTaWduIG52LXNhMTgwNgYDVQQDEy9H\n" \
+"bG9iYWxTaWduIEV4dGVuZGVkIFZhbGlkYXRpb24gQ0EgLSBTSEEyNTYgLSBHMzAe\n" \
+"Fw0yMDA5MDIxNTM4MDZaFw0yMTEwMDQxNTM4MDZaMIIBBjEdMBsGA1UEDwwUUHJp\n" \
+"dmF0ZSBPcmdhbml6YXRpb24xDzANBgNVBAUTBjU3ODYxMTETMBEGCysGAQQBgjc8\n" \
+"AgEDEwJVUzEeMBwGCysGAQQBgjc8AgECEw1OZXcgSGFtcHNoaXJlMQswCQYDVQQG\n" \
+"EwJVUzEWMBQGA1UECBMNTmV3IEhhbXBzaGlyZTETMBEGA1UEBxMKUG9ydHNtb3V0\n" \
+"aDEpMCcGA1UECRMgMiBJbnRlcm5hdGlvbmFsIERyaXZlLCBTdWl0ZSAxNTAxHTAb\n" \
+"BgNVBAoTFEdNTyBHbG9iYWxTaWduLCBJbmMuMRswGQYDVQQDExJ3d3cuZ2xvYmFs\n" \
+"c2lnbi5jb20wggEiMA0GCSqGSIb3DQEBAQUAA4IBDwAwggEKAoIBAQDhvTs7gJj+\n" \
+"myK4eLHq5Kt95hHCNG2BfLBnMnBZtkJNIX0RNuBUT9aJQTtJk1B4jgLI0x7Jr3N6\n" \
+"wRcD1lnTjgb++lxBdJHD2lpenfqU39NrC13URyuo2nyas3c+o195YZs6RVexoU+5\n" \
+"K/YKkqiJ6A4CNzLNcR3x3R0uN5lWsFHhHeVXjvVSH53F8FCFu2h6++7YDIYzt3MB\n" \
+"IiwFu8B5MQfPxGTDFv/Joa8wPy4fjfqnvxa96jnWoUHALVAgi2QLSldrt9WcypX1\n" \
+"uylwGTrgltV0JeBa+s8UVr001NoJ760kenTpnfGV172xOlIx04MnZ3iqYT1GBlGF\n" \
+"utGnu8EApjyXAgMBAAGjggfrMIIH5zAOBgNVHQ8BAf8EBAMCBaAwgZYGCCsGAQUF\n" \
+"BwEBBIGJMIGGMEcGCCsGAQUFBzAChjtodHRwOi8vc2VjdXJlLmdsb2JhbHNpZ24u\n" \
+"Y29tL2NhY2VydC9nc2V4dGVuZHZhbHNoYTJnM3IzLmNydDA7BggrBgEFBQcwAYYv\n" \
+"aHR0cDovL29jc3AyLmdsb2JhbHNpZ24uY29tL2dzZXh0ZW5kdmFsc2hhMmczcjMw\n" \
+"VQYDVR0gBE4wTDBBBgkrBgEEAaAyAQEwNDAyBggrBgEFBQcCARYmaHR0cHM6Ly93\n" \
+"d3cuZ2xvYmFsc2lnbi5jb20vcmVwb3NpdG9yeS8wBwYFZ4EMAQEwCQYDVR0TBAIw\n" \
+"ADBFBgNVHR8EPjA8MDqgOKA2hjRodHRwOi8vY3JsLmdsb2JhbHNpZ24uY29tL2dz\n" \
+"L2dzZXh0ZW5kdmFsc2hhMmczcjMuY3JsMIIFKQYDVR0RBIIFIDCCBRyCEnd3dy5n\n" \ 
+"bG9iYWxzaWduLmNvbYINZ2xvYmFsc2lnbi5iZYINZ2xvYmFsc2lnbi5jaIIQZ2xv\n" \
+"YmFsc2lnbi5jby51a4IRZ2xvYmFsc2lnbi5jb20uYXWCEWdsb2JhbHNpZ24uY29t\n" \
+"LmhrghFnbG9iYWxzaWduLmNvbS5zZ4INZ2xvYmFsc2lnbi5lc4INZ2xvYmFsc2ln\n" \
+"bi5ldYINZ2xvYmFsc2lnbi5mcoIOZ2xvYmFsc2lnbi5uZXSCDWdsb2JhbHNpZ24u\n" \
+"bmyCFXNlY3VyZS5nbG9iYWxzaWduLm5ldIIRd3d3Lmdsb2JhbHNpZ24uYmWCEXd3\n" \
+"dy5nbG9iYWxzaWduLmNoghR3d3cuZ2xvYmFsc2lnbi5jby51a4IVd3d3Lmdsb2Jh\n" \
+"bHNpZ24uY29tLmF1ghV3d3cuZ2xvYmFsc2lnbi5jb20uaGuCFXd3dy5nbG9iYWxz\n" \
+"aWduLmNvbS5zZ4IRd3d3Lmdsb2JhbHNpZ24uZXOCEXd3dy5nbG9iYWxzaWduLmV1\n" \
+"ghF3d3cuZ2xvYmFsc2lnbi5mcoISd3d3Lmdsb2JhbHNpZ24ubmV0ghF3d3cuZ2xv\n" \
+"YmFsc2lnbi5ubIIiY2VydGlmaWVkLXRpbWVzdGFtcC5nbG9iYWxzaWduLmNvbYIV\n" \
+"Y2xpZW50Lmdsb2JhbHNpZ24uY29tghFjbi5nbG9iYWxzaWduLmNvbYIbY3RsMS5l\n" \
+"cGtpcHJvLmdsb2JhbHNpZ24uY29tghdjdGwxLmhjcy5nbG9iYWxzaWduLmNvbYIa\n" \
+"Y3RsMS5zeXN0ZW0uZ2xvYmFsc2lnbi5jb22CF2N0bDIuaGNzLmdsb2JhbHNpZ24u\n" \
+"Y29tghpjdGwyLnN5c3RlbS5nbG9iYWxzaWduLmNvbYIYZG93bmxvYWRzLmdsb2Jh\n" \
+"bHNpZ24uY29tghVlLXNpZ24uZ2xvYmFsc2lnbi5jb22CEmVkaS5nbG9iYWxzaWdu\n" \
+"LmNvbYIWZXBraXByby5nbG9iYWxzaWduLmNvbYISaGNzLmdsb2JhbHNpZ24uY29t\n" \
+"ghFoay5nbG9iYWxzaWduLmNvbYITaW5mby5nbG9iYWxzaWduLmNvbYIRanAuZ2xv\n" \
+"YmFsc2lnbi5jb22CFG9jbmdzLmdsb2JhbHNpZ24uY29tghhvcGVyYXRpb24uZ2xv\n" \
+"YmFsc2lnbi5jb22CFnBhcnRuZXIuZ2xvYmFsc2lnbi5jb22CFnByb2ZpbGUuZ2xv\n" \
+"YmFsc2lnbi5jb22CFXJlZ2lzdC5nbG9iYWxzaWduLmNvbYIgcmZjMzE2MS10aW1l\n" \
+"c3RhbXAuZ2xvYmFsc2lnbi5jb22CH3JmYzMxNjF0aW1lc3RhbXAuZ2xvYmFsc2ln\n" \
+"bi5jb22CE3NlYWwuZ2xvYmFsc2lnbi5jb22CFXNlY3VyZS5nbG9iYWxzaWduLmNv\n" \
+"bYITc2hvcC5nbG9iYWxzaWduLmNvbYIVc29jaWFsLmdsb2JhbHNpZ24uY29tghRz\n" \
+"c2lmMS5nbG9iYWxzaWduLmNvbYIXc3NsY2hlY2suZ2xvYmFsc2lnbi5jb22CFnN0\n" \
+"YXRpYzEuZ2xvYmFsc2lnbi5jb22CFnN0YXRpYzIuZ2xvYmFsc2lnbi5jb22CFXN0\n" \
+"YXR1cy5nbG9iYWxzaWduLmNvbYIWc3VwcG9ydC5nbG9iYWxzaWduLmNvbYIVc3lz\n" \
+"dGVtLmdsb2JhbHNpZ24uY29tghF0aC5nbG9iYWxzaWduLmNvbYIOZ2xvYmFsc2ln\n" \
+"bi5jb20wHQYDVR0lBBYwFAYIKwYBBQUHAwEGCCsGAQUFBwMCMB8GA1UdIwQYMBaA\n" \
+"FN2z522oLujFTm7PdOZ1PJQVzugdMB0GA1UdDgQWBBSgOHv0jCH3JdmJRT1GPHUm\n" \
+"/YbYmjCCAQUGCisGAQQB1nkCBAIEgfYEgfMA8QB3AFzcQ5L+5qtFRLFemtRW5hA3\n" \
+"+9X6R9yhc5SyXub2xw7KAAABdE934ncAAAQDAEgwRgIhAJdVkn+p4Vrdj3D9hIOJ\n" \
+"PDpXuxHUTzpYc/BxjLqNcKpxAiEAjlsIW2P9AFvcBqfP1dBr786hV/CiRdSyKMZC\n" \
+"SBNcjk8AdgD2XJQv0XcwIhRUGAgwlFaO400TGTO/3wwvIAvMTvFk4wAAAXRPd+Bk\n" \
+"AAAEAwBHMEUCIQD9NYOUtCekrFwmGCVGNYzgxWWWRAy2QKsOfHdEjeKr8wIgM7po\n" \
+"kojeuRXEMP8bnm1A7S57j1/2Wcov1U871fX4wUowDQYJKoZIhvcNAQELBQADggEB\n" \
+"AENL058pRO/HflqUeXSX4aZvqf9mx6mQi/ff5WA1BRvUg6BFNr2hXc7XpAz6vV7U\n" \
+"DYcxZFw6C6lvOV0tQfdMWGG+j+jhT7MWQigHqtXTBw6ddTEuzu/6p3mY3kZLX1KZ\n" \
+"hTYatwBg/mcSlRzHGaU3c/qn4HCKa9na2QaFOWEffGh51jUlm2/8uRcFUuLS+kcX\n" \
+"qPCnVC2eHELqtjLEZCW+qNNkxT/8LRLYmgYDTGYAGWaILIfX25m3CEtABfzvcSF1\n" \
+"dYjAOknKCA552jYfC0FCIUZjx1K52SEXQCviQpZ/tJToBCwTxzUhiN3rum+FtKuL\n" \
+"uhB087agCDUo8J7k5jRtrNM=\n" \
+"-----END CERTIFICATE-----\n";
+
 
 M5EPD_Canvas canvas(&M5.EPD);
-using namespace tinyxml2;
-XMLDocument doc;
 rtc_time_t RTCtime;
 rtc_date_t RTCDate;
 
@@ -121,11 +187,11 @@ void setup() {
 
   canvas.loadFont("/ipaexg.ttf", SD);
   canvas.createCanvas(540, 960);
-  canvas.createRender(34, 256);
-  canvas.setTextSize(34);
+  canvas.createRender(32, 32);
+  canvas.setTextSize(32);
   canvas.setTextColor(15);
 
-  WiFi.begin("*ssid*", "*passwd*"); 
+  WiFi.begin("*******", "*******"); 
   while (WiFi.status() != WL_CONNECTED) { 
       delay(100); 
       Serial.print("."); 
@@ -148,8 +214,8 @@ void loop() {
  
     HTTPClient http;
 
-    // http.begin( "http://www.nhk.or.jp/rss/news/cat0.xml" ); //Specify the URL and certificate
-    http.begin( "http://www.japantimes.co.jp/feed" ); //Specify the URL and certificate
+    http.begin( "http://www.sankeibiz.jp/rss/news/flash.xml" ); //Specify the URL and certificate
+    // http.begin( "https://www.sankeibiz.jp/rss/news/flash.xml", ca ); //Specify the URL and certificate
     int httpCode = http.GET(); //Make the request
  
     if (httpCode == HTTP_CODE_OK) { //Check for the returning code
@@ -160,9 +226,10 @@ void loop() {
     }
     
     Serial.println("you have finished downloading");
+    // Serial.println(payload);
     http.end(); //Free the resources
   }
-
+  
   const char * testDocument = payload.c_str();
   std::string test = testDocument;
   std::string title_s = "<title>";
@@ -175,7 +242,7 @@ void loop() {
   std::vector<int> findVec3 = find_all(test, desc_s);
   std::vector<int> findVec4 = find_all(test, desc_e);
 
-  std::size_t size = findVec1.size();
+  std::size_t size = findVec3.size(); //descriptionのあるところまで
 
   for(int i = 0; i < size; i=i+1){
 
@@ -200,14 +267,14 @@ void loop() {
     Serial.println(title_size);
     Serial.println(desc_size);
 
-    unsigned int title_row = title_size / 3 / 14; //3byte文字換算
-    unsigned int desc_row = desc_size / 3 / 13; //3byte文字換算
+    unsigned int title_row = title_size / 3 / 19; //3byte文字換算
+    unsigned int desc_row = desc_size / 3 / 17; //3byte文字換算
 
     Serial.println(title_row);
     Serial.println(desc_row);
 
     // canvas.drawString("NHK総合ニュース", 5, 10);
-    canvas.drawString("JapanTimes TopNews", 5, 10);
+    canvas.drawString("SankeiBiz", 5, 10);
 
     unsigned int position = 0;
     title_row = title_row + 1;
@@ -240,15 +307,15 @@ void loop() {
     flushTime();
     flushBattery();
     canvas.pushCanvas(0,0,UPDATE_MODE_A2);
+    M5.EPD.Clear(false);
+    // M5.disableEPDPower();
+    // delay(500);
+    // M5.disableMainPower();
 
-    M5.disableEPDPower();
-    delay(500);
-    M5.disableMainPower();
-
-    sleep(900); //interval:15min
-    M5.enableMainPower();
-    delay(500);
-    M5.enableEPDPower();
+    sleep(600); //interval:15min
+    // M5.enableMainPower();
+    // delay(500);
+    // M5.enableEPDPower();
   }
 
   for (const auto &pos:findVec4) {
