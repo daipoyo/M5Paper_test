@@ -10,6 +10,7 @@
 #include <regex>
 #include "FS.h"
 #include "SPIFFS.h"
+#include "esp_deep_sleep.h"
 
 const char* ca= \
 "-----BEGIN CERTIFICATE-----\n" \
@@ -35,7 +36,7 @@ const char* ca= \
 "VQYDVR0gBE4wTDBBBgkrBgEEAaAyAQEwNDAyBggrBgEFBQcCARYmaHR0cHM6Ly93\n" \
 "d3cuZ2xvYmFsc2lnbi5jb20vcmVwb3NpdG9yeS8wBwYFZ4EMAQEwCQYDVR0TBAIw\n" \
 "ADBFBgNVHR8EPjA8MDqgOKA2hjRodHRwOi8vY3JsLmdsb2JhbHNpZ24uY29tL2dz\n" \
-"L2dzZXh0ZW5kdmFsc2hhMmczcjMuY3JsMIIFKQYDVR0RBIIFIDCCBRyCEnd3dy5n\n" \ 
+"L2dzZXh0ZW5kdmFsc2hhMmczcjMuY3JsMIIFKQYDVR0RBIIFIDCCBRyCEnd3dy5n\n" \
 "bG9iYWxzaWduLmNvbYINZ2xvYmFsc2lnbi5iZYINZ2xvYmFsc2lnbi5jaIIQZ2xv\n" \
 "YmFsc2lnbi5jby51a4IRZ2xvYmFsc2lnbi5jb20uYXWCEWdsb2JhbHNpZ24uY29t\n" \
 "LmhrghFnbG9iYWxzaWduLmNvbS5zZ4INZ2xvYmFsc2lnbi5lc4INZ2xvYmFsc2ln\n" \
@@ -78,7 +79,6 @@ const char* ca= \
 "dYjAOknKCA552jYfC0FCIUZjx1K52SEXQCviQpZ/tJToBCwTxzUhiN3rum+FtKuL\n" \
 "uhB087agCDUo8J7k5jRtrNM=\n" \
 "-----END CERTIFICATE-----\n";
-
 
 M5EPD_Canvas canvas(&M5.EPD);
 rtc_time_t RTCtime;
@@ -150,9 +150,9 @@ void flushBattery(){
 
 //Set Time
 int8_t global_timezone = 9;
-
 bool SyncNTPTime(void){
-    const char *ntpServer = "time.cloudflare.com";
+    // const char *ntpServer = "time.cloudflare.com";
+    const char *ntpServer = "ntp.nict.jp";
     configTime(global_timezone * 3600, 0, ntpServer);
 
     struct tm timeInfo;
@@ -184,14 +184,13 @@ void setup() {
   //M5.TP.SetRotation(90);
   M5.EPD.SetRotation(90);
   M5.EPD.Clear(true);
-
   canvas.loadFont("/ipaexg.ttf", SD);
   canvas.createCanvas(540, 960);
   canvas.createRender(32, 32);
   canvas.setTextSize(32);
   canvas.setTextColor(15);
 
-  WiFi.begin("*******", "*******"); 
+  WiFi.begin("dphone", "b555b555"); 
   while (WiFi.status() != WL_CONNECTED) { 
       delay(100); 
       Serial.print("."); 
@@ -202,24 +201,23 @@ void setup() {
   Serial.println(WiFi.localIP());
 
   SyncNTPTime();
-
 }
+
+//Global
+uint8_t kiji = 0;
+String payload;
 
 void loop() {
   
-  String payload;
   M5.EPD.Clear(true);
 
   if ((WiFi.status() == WL_CONNECTED)) { //Check the current connection status
- 
     HTTPClient http;
-
     http.begin( "http://www.sankeibiz.jp/rss/news/flash.xml" ); //Specify the URL and certificate
-    // http.begin( "https://www.sankeibiz.jp/rss/news/flash.xml", ca ); //Specify the URL and certificate
+    // http.begin( "https://www.sankeibiz.jp/rss/news/compliance.xml", ca ); //Specify the URL and certificate
     int httpCode = http.GET(); //Make the request
  
     if (httpCode == HTTP_CODE_OK) { //Check for the returning code
-      
       payload = http.getString();
       // Serial.println(httpCode);
       // Serial.println(payload);                
@@ -228,6 +226,7 @@ void loop() {
     Serial.println("you have finished downloading");
     // Serial.println(payload);
     http.end(); //Free the resources
+    WiFi.mode(WIFI_OFF);
   }
   
   const char * testDocument = payload.c_str();
@@ -244,100 +243,86 @@ void loop() {
 
   std::size_t size = findVec3.size(); //descriptionのあるところまで
 
-  for(int i = 0; i < size; i=i+1){
-
-    M5.SHT30.UpdateData();
-    tem = M5.SHT30.GetTemperature();
-    hum = M5.SHT30.GetRelHumidity();
-    Serial.printf("Temperatura: %2.2f*C  Humedad: %0.2f%%\r\n", tem, hum);
-    dtostrf(tem, 2, 2 , temStr);
-    dtostrf(hum, 2, 2 , humStr);
-    
-    //Serial.println(i);
-    
-    canvas.fillCanvas(0);
-
-    std::string title = test.substr(findVec1[i]+7, findVec2[i]-findVec1[i]-7);
-    std::string description = test.substr(findVec3[i]+13, findVec4[i]-findVec3[i]-13); 
-
-    // std::size_t title_size = title.size();
-    // std::size_t desc_size = description.size();
-    std::size_t title_size = title.length();
-    std::size_t desc_size = description.length();
-    Serial.println(title_size);
-    Serial.println(desc_size);
-
-    unsigned int title_row = title_size / 3 / 19; //3byte文字換算
-    unsigned int desc_row = desc_size / 3 / 17; //3byte文字換算
-
-    Serial.println(title_row);
-    Serial.println(desc_row);
-
-    // canvas.drawString("NHK総合ニュース", 5, 10);
-    canvas.drawString("SankeiBiz", 5, 10);
-
-    unsigned int position = 0;
-    title_row = title_row + 1;
-    desc_row = desc_row + 1;
-
-    if(title_row>1){
-      for(int i=0; i<title_row; i=i+1){
-      position = 50*i+100;
-      std::string title_sub = title.substr(3*14*i, 3*14);
-      canvas.drawString(title_sub.c_str(), 5, position);
-      }
-    }else{
-      position = 100;
-      canvas.drawString(title.c_str(), 5, position);
-    }
-    // canvas.drawString(title.c_str(), 15, 100);
-    if(desc_row>1){
-      for(int i=0; i<desc_row; i=i+1){
-      std::string desc_sub = description.substr(3*13*i, 3*13);
-      canvas.drawString(desc_sub.c_str(), 25, position+50+50*i);
-      }
-    }else{
-      canvas.drawString(description.c_str(), 25, position+50);
-    }
-    // canvas.drawString(description.c_str(), 15, 150);
-    
-    canvas.drawString("温度:" + String(temStr) + "℃", 10, 800);
-    canvas.drawString("湿度:" + String(humStr) + "%", 10, 850);
-
-    flushTime();
-    flushBattery();
-    canvas.pushCanvas(0,0,UPDATE_MODE_A2);
-    M5.EPD.Clear(false);
-    // M5.disableEPDPower();
-    // delay(500);
-    // M5.disableMainPower();
-
-    sleep(600); //interval:15min
-    // M5.enableMainPower();
-    // delay(500);
-    // M5.enableEPDPower();
+  if(kiji > 0){
+    M5.enableEPDPower();
   }
 
-  for (const auto &pos:findVec4) {
-    Serial.println(pos);
-  }
-
-  // if(doc.Parse(testDocument)!= XML_SUCCESS){
-  //   Serial.println("Error parsing");  
-  //   return;
-  // }else{
-  //   Serial.println("Success parsing");
-  // }
-
-  // unsigned int num1 = test.find("<title>");
-  // unsigned int num2 = test.find("</title>");
-  //Serial.println(num1);
-  //Serial.println(num2);
+  M5.SHT30.UpdateData();
+  tem = M5.SHT30.GetTemperature();
+  hum = M5.SHT30.GetRelHumidity();
+  // Serial.printf("Temperatura: %2.2f*C  Humedad: %0.2f%%\r\n", tem, hum);
+  dtostrf(tem, 2, 2 , temStr);
+  dtostrf(hum, 2, 2 , humStr);
   
-  // std::string top_title = test.substr(num1+7, num2-num1-7);
-  // canvas.drawString(top_title.c_str(), 10, 550, 45);
-  // canvas.pushCanvas(0,0,UPDATE_MODE_DU4);
+  //Serial.println(i);
+  
+  canvas.fillCanvas(0);
+  std::string title = test.substr(findVec1[kiji]+7, findVec2[kiji]-findVec1[kiji]-7);
+  std::string description = test.substr(findVec3[kiji]+13, findVec4[kiji]-findVec3[kiji]-13); 
+  std::size_t title_size = title.length();
+  std::size_t desc_size = description.length();
+  // Serial.println(title_size);
+  // Serial.println(desc_size);
+  unsigned int title_row = title_size / 3 / 16; //3byte文字換算
+  unsigned int desc_row = desc_size / 3 / 15; //3byte文字換算
+  // Serial.println(title_row);
+  // Serial.println(desc_row);
+  canvas.drawString("SankeiBiz ニュース速報", 5, 10);
+  unsigned int position = 0;
+  title_row = title_row + 1;
+  desc_row = desc_row + 1;
 
-  // sleep(3600);
+  if(desc_row > 12){
+    if(title_row < 3){
+      desc_row = 12;
+    }else{
+      desc_row = 11;
+    }
+  }
 
+  if(title_row>1){
+    for(int count=0; count < title_row; count=count+1){
+      position = 50*count+100;
+      std::string title_sub = title.substr(3*16*count, 3*16);
+      canvas.drawString(title_sub.c_str(), 5, position);
+    }
+  }else{
+    position = 100;
+    canvas.drawString(title.c_str(), 5, position);
+  }
+  // canvas.drawString(title.c_str(), 15, 100);
+  if(desc_row>1){
+    for(int count=0; count < desc_row; count=count+1){
+      std::string desc_sub = description.substr(3*15*count, 3*15);
+      canvas.drawString(desc_sub.c_str(), 25, position+50+50*count);
+    }
+  }else{
+    canvas.drawString(description.c_str(), 25, position+50);
+  }
+  // canvas.drawString(description.c_str(), 15, 150);
+  
+  canvas.drawString("温度:" + String(temStr) + "℃", 10, 800);
+  canvas.drawString("湿度:" + String(humStr) + "%", 10, 850);
+  flushTime();
+  flushBattery();
+  canvas.pushCanvas(0,0,UPDATE_MODE_A2);
+  delay(1000);
+  // M5.disableEPDPower();
+  // delay(500);
+  // M5.disableMainPower();
+  if(kiji == 0){
+    sleep(10);
+    kiji = kiji + 1;
+  }else if(kiji != 0 && kiji < size){
+    esp_sleep_enable_timer_wakeup(600 * 1000 * 1000); //600 seconds
+    esp_light_sleep_start();
+    kiji = kiji + 1;
+  }else{
+    esp_sleep_enable_timer_wakeup(600 * 1000 * 1000); //600 seconds
+    esp_light_sleep_start();
+    esp_restart();
+  }
+  // M5.enableMainPower();
+  // delay(500);
+  // M5.enableEPDPower();
 }
