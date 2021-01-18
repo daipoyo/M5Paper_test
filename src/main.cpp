@@ -10,7 +10,7 @@
 #include <regex>
 #include "FS.h"
 #include "SPIFFS.h"
-#include "esp_deep_sleep.h"
+#include "esp_sleep.h"
 
 const char* ca= \
 "-----BEGIN CERTIFICATE-----\n" \
@@ -242,6 +242,7 @@ void loop() {
   std::vector<int> findVec4 = find_all(test, desc_e);
 
   std::size_t size = findVec3.size(); //descriptionのあるところまで
+  Serial.printf("size = %02d",size);
 
   if(kiji > 0){
     M5.enableEPDPower();
@@ -313,9 +314,10 @@ void loop() {
   if(kiji == 0){
     sleep(10);
     kiji = kiji + 1;
-  }else if(kiji != 0 && kiji < size){
+  }else if(0 < kiji && kiji <= size){
     esp_sleep_enable_timer_wakeup(600 * 1000 * 1000); //600 seconds
-    esp_light_sleep_start();
+    int err = esp_light_sleep_start();
+    Serial.println(err);
     kiji = kiji + 1;
   }else{
     esp_sleep_enable_timer_wakeup(600 * 1000 * 1000); //600 seconds
