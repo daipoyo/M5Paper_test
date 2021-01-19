@@ -11,6 +11,7 @@
 #include "FS.h"
 #include "SPIFFS.h"
 #include "esp_sleep.h"
+#include "esp_wifi.h"
 
 const char* ca= \
 "-----BEGIN CERTIFICATE-----\n" \
@@ -316,11 +317,12 @@ void loop() {
     kiji = kiji + 1;
   }else if(0 < kiji && kiji <= size){
     esp_sleep_enable_timer_wakeup(600 * 1000 * 1000); //600 seconds
-    int err = esp_light_sleep_start();
-    Serial.println(err);
+    esp_sleep_pd_config(ESP_PD_DOMAIN_RTC_PERIPH, ESP_PD_OPTION_ON);
+    esp_light_sleep_start();
     kiji = kiji + 1;
   }else{
     esp_sleep_enable_timer_wakeup(600 * 1000 * 1000); //600 seconds
+    esp_sleep_pd_config(ESP_PD_DOMAIN_RTC_PERIPH, ESP_PD_OPTION_ON);
     esp_light_sleep_start();
     esp_restart();
   }
