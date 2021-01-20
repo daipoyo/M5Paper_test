@@ -185,21 +185,47 @@ void setup() {
   //M5.TP.SetRotation(90);
   M5.EPD.SetRotation(90);
   M5.EPD.Clear(true);
+
+  esp_sleep_pd_config(ESP_PD_DOMAIN_RTC_PERIPH, ESP_PD_OPTION_ON);
+  esp_sleep_pd_config(ESP_PD_DOMAIN_RTC_SLOW_MEM, ESP_PD_OPTION_ON);
+  esp_sleep_pd_config(ESP_PD_DOMAIN_RTC_FAST_MEM, ESP_PD_OPTION_ON);
+
   canvas.loadFont("/ipaexg.ttf", SD);
   canvas.createCanvas(540, 960);
   canvas.createRender(32, 32);
   canvas.setTextSize(32);
   canvas.setTextColor(15);
 
-  WiFi.begin("dphone", "b555b555"); 
-  while (WiFi.status() != WL_CONNECTED) { 
-      delay(100); 
-      Serial.print("."); 
+  uint8_t while_count = 0;
+  while(WiFi.status() != WL_CONNECTED){
+    for(uint8_t count = 0; count < 5; count++){
+      WiFi.begin("dphone", "b555b555"); 
+      delay(1000); 
+      Serial.print(".");
+      while_count ++;
+    }
+    for(int count = 0; count < 5; count++){
+      WiFi.begin("AirMac", "hira0698"); 
+      delay(1000); 
+      Serial.print(".");
+      while_count ++;
+    }
+    if(while_count > 20){
+      canvas.fillCanvas(0);
+      canvas.drawString("WiFi not connecting.", 20, 480);
+      canvas.pushCanvas(0,0,UPDATE_MODE_A2);
+      delay(2000);
+      esp_sleep_enable_timer_wakeup(600 * 1000 * 1000); //600 seconds
+      esp_deep_sleep_start();
+      M5.shutdown();
+    }
   }
 
-  Serial.println();
-  Serial.print("WiFi connected: ");
-  Serial.println(WiFi.localIP());
+  if(WiFi.status() == WL_CONNECTED){
+    Serial.println();
+    Serial.print("WiFi connected: ");
+    Serial.println(WiFi.localIP());
+  }
 
   SyncNTPTime();
 }
@@ -269,7 +295,8 @@ void loop() {
   unsigned int desc_row = desc_size / 3 / 15; //3byte文字換算
   // Serial.println(title_row);
   // Serial.println(desc_row);
-  canvas.drawString("SankeiBiz ニュース速報", 5, 10);
+  // canvas.drawString("SankeiBiz ニュース速報", 5, 10);
+  canvas.drawPngFile(SD, "/sakei_logo.png", 0, 0);
   unsigned int position = 0;
   title_row = title_row + 1;
   desc_row = desc_row + 1;
@@ -309,24 +336,17 @@ void loop() {
   flushBattery();
   canvas.pushCanvas(0,0,UPDATE_MODE_A2);
   delay(1000);
-  // M5.disableEPDPower();
-  // delay(500);
-  // M5.disableMainPower();
+
   if(kiji == 0){
     sleep(10);
     kiji = kiji + 1;
-  }else if(0 < kiji && kiji <= size){
+  }else if(0 < kiji && kiji < size){
     esp_sleep_enable_timer_wakeup(600 * 1000 * 1000); //600 seconds
-    esp_sleep_pd_config(ESP_PD_DOMAIN_RTC_PERIPH, ESP_PD_OPTION_ON);
     esp_light_sleep_start();
     kiji = kiji + 1;
   }else{
     esp_sleep_enable_timer_wakeup(600 * 1000 * 1000); //600 seconds
-    esp_sleep_pd_config(ESP_PD_DOMAIN_RTC_PERIPH, ESP_PD_OPTION_ON);
-    esp_light_sleep_start();
-    esp_restart();
+    esp_deep_sleep_start();
+    M5.shutdown();
   }
-  // M5.enableMainPower();
-  // delay(500);
-  // M5.enableEPDPower();
 }
