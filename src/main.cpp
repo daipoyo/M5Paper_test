@@ -196,32 +196,48 @@ void setup() {
   canvas.setTextSize(32);
   canvas.setTextColor(15);
 
-  uint8_t while_count = 0;
-  while(WiFi.status() != WL_CONNECTED){
-    for(uint8_t count = 0; count < 5; count++){
-      WiFi.begin("dphone", "b555b555"); 
-      delay(1000); 
-      Serial.print(".");
-      while_count ++;
+  uint8_t try_num = 0;
+  uint8_t home_wifi = 0;
+  uint8_t tez_wifi = 0;
+
+  for(try_num = 0; try_num < 5; try_num++){
+    if(home_wifi == 0){
+      for(uint8_t count = 0; count < 5; count++){
+        WiFi.begin("dphone", "b555b555"); 
+        delay(1000); 
+        Serial.print(".");
+        count ++;
+        if(WiFi.status() == WL_CONNECTED){
+          tez_wifi = 1;
+          count = 5;
+          try_num = 5;
+        }
+      }
+    }else if(tez_wifi == 0){
+      for(int count = 0; count < 5; count++){
+        WiFi.begin("AirMac", "hira0698"); 
+        delay(1000); 
+        Serial.print(".");
+        count ++;
+        if(WiFi.status() == WL_CONNECTED){
+          home_wifi = 1;
+          count = 5;
+          try_num = 5;
+        }
+      }
     }
-    for(int count = 0; count < 5; count++){
-      WiFi.begin("AirMac", "hira0698"); 
-      delay(1000); 
-      Serial.print(".");
-      while_count ++;
-    }
-    if(while_count > 20){
-      canvas.fillCanvas(0);
-      canvas.drawString("WiFi not connecting.", 20, 480);
-      canvas.pushCanvas(0,0,UPDATE_MODE_A2);
-      delay(2000);
-      esp_sleep_enable_timer_wakeup(600 * 1000 * 1000); //600 seconds
-      esp_deep_sleep_start();
-      M5.shutdown();
-    }
+    try_num++;
   }
 
-  if(WiFi.status() == WL_CONNECTED){
+  if(WiFi.status() != WL_CONNECTED){
+    canvas.fillCanvas(0);
+    canvas.drawString("WiFi not connecting.", 20, 480);
+    canvas.pushCanvas(0,0,UPDATE_MODE_A2);
+    delay(2000);
+    esp_sleep_enable_timer_wakeup(600 * 1000 * 1000); //600 seconds
+    esp_deep_sleep_start();
+    M5.shutdown();
+  }else if(WiFi.status() == WL_CONNECTED){
     Serial.println();
     Serial.print("WiFi connected: ");
     Serial.println(WiFi.localIP());
@@ -296,7 +312,7 @@ void loop() {
   // Serial.println(title_row);
   // Serial.println(desc_row);
   // canvas.drawString("SankeiBiz ニュース速報", 5, 10);
-  canvas.drawPngFile(SD, "/sakei_logo.png", 0, 0);
+  canvas.drawPngFile(SD, "/sankeibiz_logo_gray00.png", 0, 0);
   unsigned int position = 0;
   title_row = title_row + 1;
   desc_row = desc_row + 1;
