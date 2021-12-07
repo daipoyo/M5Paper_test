@@ -204,7 +204,7 @@ void setup() {
     if(home_wifi == 0){
       for(uint8_t count = 0; count < 5; count++){
         WiFi.begin("dphone", "b555b555"); 
-        delay(1000); 
+        delay(5000); 
         Serial.print(".");
         count ++;
         if(WiFi.status() == WL_CONNECTED){
@@ -216,7 +216,7 @@ void setup() {
     }else if(tez_wifi == 0){
       for(int count = 0; count < 5; count++){
         WiFi.begin("AirMac", "hira0698"); 
-        delay(1000); 
+        delay(5000); 
         Serial.print(".");
         count ++;
         if(WiFi.status() == WL_CONNECTED){
@@ -256,7 +256,8 @@ void loop() {
 
   if ((WiFi.status() == WL_CONNECTED)) { //Check the current connection status
     HTTPClient http;
-    http.begin( "http://www.sankeibiz.jp/rss/news/flash.xml" ); //Specify the URL and certificate
+    http.begin( "https://www-origin.sankeibiz.jp/rss/news/business.xml" ); //Specify the URL and certificate
+    // http.begin( "http://www.sankeibiz.jp/rss/news/flash.xml" ); //Specify the URL and certificate
     // http.begin( "https://www.sankeibiz.jp/rss/news/compliance.xml", ca ); //Specify the URL and certificate
     int httpCode = http.GET(); //Make the request
  
